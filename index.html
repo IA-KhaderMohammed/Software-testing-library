@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة اختبارات بايثون - الأستاذ الخضر</title>
+    <link rel="stylesheet" href="style.css?v=2">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <div id="start-screen" class="card active">
+            <h1 class="neon-text">منصة اختبارات Python 🐍</h1>
+            <p style="text-align: center;">مرحباً بك في نظام التقييم الخاص بقناة الأستاذ الخضر.</p>
+            <div class="rules">
+                <h3>⚠️ نظام الحماية الذكي:</h3>
+                <ul>
+                    <li>مغادرة النافذة للمرة الأولى تمنحك 20 ثانية للعودة، وللمرة الثانية يتم طردك.</li>
+                    <li>تم تعطيل النسخ واللصق تماماً، يجب كتابة الأكواد بنفسك.</li>
+                </ul>
+            </div>
+            <input type="text" id="username" placeholder="أدخل اسمك الثلاثي المعتمد..." required>
+            <input type="text" id="whatsapp" placeholder="أدخل رقم الواتساب (مع رمز الدولة)..." required>
+            <button onclick="startQuiz()" class="btn-neon">ابدأ الاختبار الآن</button>
+            <br><br>
+            <button onclick="goToAdmin()" style="display:block; width:80%; margin: 20px auto; padding: 15px; background: #161f38; border: 2px solid #00f0ff; color: #00f0ff; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; position: relative; z-index: 999; user-select: none;">👑 دخول لوحة تحكم الأستاذ</button>
+        </div>
+
+        <div id="quiz-screen" class="card">
+            <div class="quiz-header">
+                <span id="question-number">السؤال 1</span>
+                <span id="user-display"></span>
+            </div>
+            <div class="progress-bar"><div id="progress" class="progress-fill"></div></div>
+            
+            <div id="question-container">
+                <h2 id="question-text" style="white-space: pre-wrap;">جاري تحميل السؤال...</h2>
+                
+                <div id="options-container"></div>
+                
+                <div id="code-container" style="display: none;">
+                    <p style="color: var(--neon-blue); margin-bottom: 10px;">اكتب أو صلح الكود في المربع التالي:</p>
+                    <textarea id="code-answer" placeholder="# اكتب كود البايثون هنا..." rows="8" onpaste="return false;"></textarea>
+                </div>
+            </div>
+            <button onclick="nextQuestion()" id="next-btn" class="btn-neon" style="margin-top: 20px;">تأكيد الإجابة والتالي</button>
+        </div>
+
+        <div id="result-screen" class="card">
+            <h2 class="neon-text-green">تم تسليم اختبارك بنجاح! 🎉</h2>
+            <p style="margin-top:20px; text-align:center;">شكراً لك، تم إرسال إجاباتك والأكواد التي كتبتها إلى المشرف لمراجعتها يدوياً.</p>
+            <p style="text-align:center;">سيتم مراجعة حلولك ومراسلتك عبر رقم الواتساب الذي سجلته فور انتهاء التصحيح.</p>
+            <button onclick="goToHome()" style="display:block; width:80%; margin: 25px auto 0 auto; padding: 12px; background: #00f0ff; color: #161f38; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s;">🔄 العودة للرئيسية</button>
+            </div>
+
+        <div id="disqualified-screen" class="card disqualified">
+            <h1 class="neon-text-red">🚨 تم استبعادك!</h1>
+            <p id="disqualify-reason">لقد خالفت قوانين الحماية وغادرت واجهة الاختبار.</p>
+            <div class="lock-icon">🔒</div>
+        </div>
+
+        <div id="admin-screen" class="card">
+            <h2 class="neon-text">لوحة تحكم المشرف 👑</h2>
+            <div class="admin-section">
+                <h3>➕ إضافة سؤال جديد للاختبار</h3>
+                <label>نص السؤال (أو الكود المراد تصحيحه):</label>
+                <textarea id="new-q-text" placeholder="مثال: صلح الخطأ في الكود التالي أو اكتب دالة لحساب..." rows="4"></textarea>
+                
+                <label>نوع السؤال:</label>
+                <select id="new-q-type" onchange="toggleAdminOptions()">
+                    <option value="code">كتابة / تصحيح كود بايثون</option>
+                    <option value="mcq">اختيارات متعددة</option>
+                </select>
+                
+                <div id="admin-mcq-inputs" style="display:none; margin-top:10px;">
+                    <label>الخيارات (افصل بينها بفاصلة ,):</label>
+                    <input type="text" id="new-q-options" placeholder="خيار1, خيار2, خيار3">
+                    <label>رقم الخيار الصحيح (ابدأ من 0):</label>
+                    <input type="number" id="new-q-correct" placeholder="0">
+                </div>
+                <button onclick="addQuestion()" class="btn-neon" style="margin-top:15px; border-color:var(--neon-green);">حفظ ونشر السؤال فوراً</button>
+            </div>
+
+            <hr style="border: 1px solid #1f2d52; margin: 25px 0;">
+
+            <div class="admin-section">
+                <h3>👥 إجابات الطلاب المستلمة</h3>
+                <div style="overflow-x: auto;">
+                    <table>
+                     <h3 style="color: var(--neon-blue); margin-top: 30px; text-align: center;">📝 الأسئلة الحالية في المنصة</h3>
+<div style="overflow-x:auto; margin-top:15px;">
+    <table>
+        <thead>
+            <tr>
+                <th>نص السؤال</th>
+                <th>النوع</th>
+                <th>التحكم</th>
+            </tr>
+        </thead>
+        <tbody id="admin-questions-tbody">
+            </tbody>
+    </table>
+</div>
+
+                        <thead>
+                            <tr>
+                                <th>اسم الطالب</th>
+                                <th>الواتساب</th>
+                                <th>إجابات الأسئلة والأكواد المكتوبة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-tbody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+            <button onclick="exitAdmin()" class="btn-neon" style="margin-top:20px; border-color:var(--neon-red);">خروج لواجهة الطلاب</button>
+        </div>
+    </div>
+
+    <div id="warning-modal" class="modal">
+        <div class="modal-content">
+            <h2>⚠️ تحذير أمني خطير!</h2>
+            <p>لقد غادرت نافذة الاختبار! لديك فرصة الأخيرة للعودة خلال:</p>
+            <div id="countdown-box"><span id="countdown-text">20</span> ثانية</div>
+        </div>
+    </div>
+
+   <script src="script.js?v=2"></script>
+</body>
+</html>

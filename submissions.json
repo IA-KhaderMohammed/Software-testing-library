@@ -1,0 +1,50 @@
+[
+    {
+        "username": "الخضر محمد سليمان",
+        "whatsapp": "+249906748343",
+        "answers": [
+            {
+                "question": "كيف نقوم بطباعة النص في بايثون",
+                "type": "mcq",
+                "answer": "print()"
+            }
+        ]
+    },
+    {
+        "username": "الخضر محمد سليمان",
+        "whatsapp": "+249906748343",
+        "answers": [
+            {
+                "question": "كيف نقوم بطباعة النص في بايثون",
+                "type": "mcq",
+                "answer": "print()"
+            },
+            {
+                "question": "كيف نقوم بطباعة النص في بآيثون؟",
+                "type": "mcq",
+                "answer": "print()"
+            }
+        ]
+    },
+    {
+        "username": "الخضر محمد سليمان",
+        "whatsapp": "+249906748343",
+        "answers": [
+            {
+                "question": "كيف نقوم بطباعة النص في بايثون",
+                "type": "mcq",
+                "answer": "print()"
+            },
+            {
+                "question": "كيف نقوم بطباعة النص في بآيثون؟",
+                "type": "mcq",
+                "answer": "print()"
+            },
+            {
+                "question": "كيف تتبطوب",
+                "type": "mcq",
+                "answer": "وما"
+            }
+        ]
+    }
+]
