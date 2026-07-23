@@ -36,7 +36,7 @@ fetchQuestions();
 // 👑 2. دالة الدخول للوحة التحكم (معزولة وشغالة دائماً)
 function goToAdmin() {
     const pass = prompt("الرجاء إدخال الرمز السري للأستاذ الخضر:");
-    if (pass === "1234") {
+    if (pass === "906748343") {
         document.getElementById('start-screen').classList.remove('active');
         document.getElementById('admin-screen').classList.add('active');
         loadStudentsSubmissions();
