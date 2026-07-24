@@ -1,3 +1,14 @@
+from pymongo import MongoClient
+
+# رابط الاتصال بقاعدة البيانات
+MONGO_URI = "mongodb+srv://glofr12gdf_db_user:iqZibU7xeVESsJTo@store.yovmlnq.mongodb.net/?appName=store"
+
+client = MongoClient(MONGO_URI)
+db = client['quiz_platform']
+
+# مجموعات البيانات للحفظ الدائم
+questions_col = db['questions']  # حفظ الأسئلة
+results_col = db['results']      # حفظ نتائج الطلاب
 import http.server
 import socketserver
 import json
