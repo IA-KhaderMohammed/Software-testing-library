@@ -20,10 +20,12 @@ SUBMISSIONS_FILE = 'submissions.json'
 
 # --- حفظ وقراءة البيانات من قاعدة البيانات السحابية MongoDB ---
 
+# --- حفظ وقراءة البيانات من قاعدة البيانات السحابية MongoDB ---
+
 def load_data(filename):
     try:
         if filename == QUESTIONS_FILE:
-            # جلب الأسئلة من MongoDB
+            # جلب الأسئلة من MongoDB بدون عنصر _id
             questions = list(questions_col.find({}, {'_id': 0}))
             return questions
         elif filename == SUBMISSIONS_FILE:
@@ -38,22 +40,19 @@ def load_data(filename):
 def save_data(filename, data):
     try:
         if filename == QUESTIONS_FILE:
-            # تحديث قائمة الأسئلة في MongoDB
-            questions_col.delete_many({})  # تفريغ القديم
-            if data:
-                questions_col.insert_many(data)  # إضافة الأسئلة الجديدة
+            # مسح القديم وإضافة الأسئلة الجديدة
+            questions_col.delete_many({})
+            if data and len(data) > 0:
+                # تنظيف البيانات للتأكد من عدم وجود أخطاء
+                clean_data = [dict(item) for item in data]
+                questions_col.insert_many(clean_data)
         elif filename == SUBMISSIONS_FILE:
-            # تحديث قائمة الإجابات في MongoDB
-            results_col.delete_many({})  # تفريغ القديم
-            if data:
-                results_col.insert_many(data)  # إضافة الإجابات الجديدة
+            results_col.delete_many({})
+            if data and len(data) > 0:
+                clean_data = [dict(item) for item in data]
+                results_col.insert_many(clean_data)
     except Exception as e:
         print("Error saving to MongoDB:", e)
-        
-class NobleServer(socketserver.TCPServer):
-    allow_reuse_address = True
-
-class MyHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         # عرض الصفحة الرئيسية
         if self.path == '/' or self.path == '/index.html':
