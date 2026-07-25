@@ -18,21 +18,38 @@ PORT = 8080
 QUESTIONS_FILE = 'questions.json'
 SUBMISSIONS_FILE = 'submissions.json'
 
-# دالة تحميل البيانات من الملفات
+# --- حفظ وقراءة البيانات من قاعدة البيانات السحابية MongoDB ---
+
 def load_data(filename):
-    if not os.path.exists(filename):
-        return []
     try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except:
+        if filename == QUESTIONS_FILE:
+            # جلب الأسئلة من MongoDB
+            questions = list(questions_col.find({}, {'_id': 0}))
+            return questions
+        elif filename == SUBMISSIONS_FILE:
+            # جلب إجابات الطلاب من MongoDB
+            submissions = list(results_col.find({}, {'_id': 0}))
+            return submissions
+        return []
+    except Exception as e:
+        print("Error loading from MongoDB:", e)
         return []
 
-# دالة حفظ البيانات في الملفات
 def save_data(filename, data):
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
+    try:
+        if filename == QUESTIONS_FILE:
+            # تحديث قائمة الأسئلة في MongoDB
+            questions_col.delete_many({})  # تفريغ القديم
+            if data:
+                questions_col.insert_many(data)  # إضافة الأسئلة الجديدة
+        elif filename == SUBMISSIONS_FILE:
+            # تحديث قائمة الإجابات في MongoDB
+            results_col.delete_many({})  # تفريغ القديم
+            if data:
+                results_col.insert_many(data)  # إضافة الإجابات الجديدة
+    except Exception as e:
+        print("Error saving to MongoDB:", e)
+        
 class NobleServer(socketserver.TCPServer):
     allow_reuse_address = True
 
