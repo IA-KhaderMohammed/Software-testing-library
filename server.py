@@ -18,41 +18,52 @@ PORT = 8080
 QUESTIONS_FILE = 'questions.json'
 SUBMISSIONS_FILE = 'submissions.json'
 
-# --- حفظ وقراءة البيانات من قاعدة البيانات السحابية MongoDB ---
-
-# --- حفظ وقراءة البيانات من قاعدة البيانات السحابية MongoDB ---
+# --- كود القراءة والحفظ المطور والآمن لـ MongoDB ---
 
 def load_data(filename):
     try:
         if filename == QUESTIONS_FILE:
-            # جلب الأسئلة من MongoDB بدون عنصر _id
-            questions = list(questions_col.find({}, {'_id': 0}))
-            return questions
+            # جلب الأسئلة مع استبعاد _id لمنع أخطاء العرض
+            return list(questions_col.find({}, {'_id': 0}))
         elif filename == SUBMISSIONS_FILE:
-            # جلب إجابات الطلاب من MongoDB
-            submissions = list(results_col.find({}, {'_id': 0}))
-            return submissions
+            # جلب إجابات الطلاب مع استبعاد _id لتعرض في لوحة المشرف
+            return list(results_col.find({}, {'_id': 0}))
         return []
     except Exception as e:
-        print("Error loading from MongoDB:", e)
+        print("خطأ في قراءة البيانات من MongoDB:", e)
         return []
 
 def save_data(filename, data):
     try:
         if filename == QUESTIONS_FILE:
-            # مسح القديم وإضافة الأسئلة الجديدة
             questions_col.delete_many({})
-            if data and len(data) > 0:
-                # تنظيف البيانات للتأكد من عدم وجود أخطاء
-                clean_data = [dict(item) for item in data]
+            if isinstance(data, list) and len(data) > 0:
+                clean_data = []
+                for item in data:
+                    item_dict = dict(item)
+                    item_dict.pop('_id', None)
+                    clean_data.append(item_dict)
                 questions_col.insert_many(clean_data)
+
         elif filename == SUBMISSIONS_FILE:
-            results_col.delete_many({})
-            if data and len(data) > 0:
-                clean_data = [dict(item) for item in data]
-                results_col.insert_many(clean_data)
+            # إذا كانت إجابة طالب واحدة جديدة، نضيفها مباشرة بدون مسح القديم
+            if isinstance(data, dict):
+                item_dict = dict(data)
+                item_dict.pop('_id', None)
+                results_col.insert_one(item_dict)
+            # إذا كانت قائمة إجابات
+            elif isinstance(data, list):
+                if len(data) > 0:
+                    clean_data = []
+                    for item in data:
+                        item_dict = dict(item)
+                        item_dict.pop('_id', None)
+                        clean_data.append(item_dict)
+                    results_col.delete_many({})
+                    results_col.insert_many(clean_data)
     except Exception as e:
-        print("Error saving to MongoDB:", e)
+        print("خطأ في حفظ البيانات في MongoDB:", e)
+
     def do_GET(self):
         # عرض الصفحة الرئيسية
         if self.path == '/' or self.path == '/index.html':
