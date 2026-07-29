@@ -1,3 +1,2 @@
 pymongo
 dnspython
-pymongo[srv]
