@@ -1,153 +1,98 @@
-from pymongo import MongoClient
-
-# رابط الاتصال بقاعدة البيانات
-MONGO_URI = "mongodb+srv://glofr12gdf_db_user:iqZibU7xeVESsJTo@store.yovmlnq.mongodb.net/?appName=store"
-
-client = MongoClient(MONGO_URI)
-db = client['quiz_platform']
-
-# مجموعات البيانات للحفظ الدائم
-questions_col = db['questions']  # حفظ الأسئلة
-results_col = db['results']      # حفظ نتائج الطلاب
 import http.server
 import socketserver
 import json
 import os
+from pymongo import MongoClient
 
-PORT = 8080
-QUESTIONS_FILE = 'questions.json'
-SUBMISSIONS_FILE = 'submissions.json'
+# --- الاتصال بقاعدة البيانات السحابية MongoDB ---
+MONGO_URI = "mongodb+srv://glofr12gdf_db_user:iqZibU7xeVESsJTo@store.yovmlnq.mongodb.net/?appName=store"
 
-# --- كود القراءة والحفظ المطور والآمن لـ MongoDB ---
+try:
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    db = client['quiz_platform']
+    questions_col = db['questions']
+    results_col = db['results']
+    print("تم الاتصال بـ MongoDB بنجاح!")
+except Exception as e:
+    print("خطأ في الاتصال بـ MongoDB:", e)
 
-def load_data(filename):
-    try:
-        if filename == QUESTIONS_FILE:
-            # جلب الأسئلة مع استبعاد _id لمنع أخطاء العرض
-            return list(questions_col.find({}, {'_id': 0}))
-        elif filename == SUBMISSIONS_FILE:
-            # جلب إجابات الطلاب مع استبعاد _id لتعرض في لوحة المشرف
-            return list(results_col.find({}, {'_id': 0}))
-        return []
-    except Exception as e:
-        print("خطأ في قراءة البيانات من MongoDB:", e)
-        return []
+PORT = int(os.environ.get("PORT", 8080))
 
-def save_data(filename, data):
-    try:
-        if filename == QUESTIONS_FILE:
-            questions_col.delete_many({})
-            if isinstance(data, list) and len(data) > 0:
-                clean_data = []
-                for item in data:
-                    item_dict = dict(item)
-                    item_dict.pop('_id', None)
-                    clean_data.append(item_dict)
-                questions_col.insert_many(clean_data)
-
-        elif filename == SUBMISSIONS_FILE:
-            # إذا كانت إجابة طالب واحدة جديدة، نضيفها مباشرة بدون مسح القديم
-            if isinstance(data, dict):
-                item_dict = dict(data)
-                item_dict.pop('_id', None)
-                results_col.insert_one(item_dict)
-            # إذا كانت قائمة إجابات
-            elif isinstance(data, list):
-                if len(data) > 0:
-                    clean_data = []
-                    for item in data:
-                        item_dict = dict(item)
-                        item_dict.pop('_id', None)
-                        clean_data.append(item_dict)
-                    results_col.delete_many({})
-                    results_col.insert_many(clean_data)
-    except Exception as e:
-        print("خطأ في حفظ البيانات في MongoDB:", e)
+class MyHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
-        # عرض الصفحة الرئيسية
-        if self.path == '/' or self.path == '/index.html':
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/html; charset=utf-8')
-            self.end_headers()
-            with open('index.html', 'rb') as f:
-                self.wfile.write(f.read())
-        # عرض ملف التصميم
-        elif self.path.startswith('/style.css'):
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/css')
-            self.end_headers()
-            with open('style.css', 'rb') as f:
-                self.wfile.write(f.read())
-        # عرض ملف الجافا سكريبت
-        elif self.path.startswith('/script.js'):
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/javascript')
-            self.end_headers()
-            with open('script.js', 'rb') as f:
-                self.wfile.write(f.read())
-        # جلب الأسئلة للمنصة وللأستاذ
-        elif self.path == '/get_questions':
+        # 1. جلب الأسئلة من MongoDB
+        if self.path in ['/questions', '/get_questions']:
+            try:
+                questions = list(questions_col.find({}, {'_id': 0}))
+            except Exception as e:
+                print("خطأ قراءة الأسئلة:", e)
+                questions = []
+
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            questions = load_data(QUESTIONS_FILE)
-            self.wfile.write(json.dumps(questions).encode('utf-8'))
-        # جلب إجابات الطلاب للوحة التحكم
-        elif self.path == '/get_submissions':
+            self.wfile.write(json.dumps(questions, ensure_ascii=False).encode('utf-8'))
+
+        # 2. جلب إجابات ونتائج الطلاب للمشرف
+        elif self.path in ['/submissions', '/get_submissions', '/results']:
+            try:
+                results = list(results_col.find({}, {'_id': 0}))
+            except Exception as e:
+                print("خطأ قراءة النتائج:", e)
+                results = []
+
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            submissions = load_data(SUBMISSIONS_FILE)
-            self.wfile.write(json.dumps(submissions).encode('utf-8'))
+            self.wfile.write(json.dumps(results, ensure_ascii=False).encode('utf-8'))
+
+        # 3. عرض الصفحات العادية (index.html, style.css, script.js)
         else:
-            self.send_error(404, "File Not Found")
+            super().do_GET()
 
     def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        
-        # 1. إضافة سؤال جديد
-        if self.path == '/add_question':
-            q = json.loads(post_data.decode('utf-8'))
-            questions = load_data(QUESTIONS_FILE)
-            questions.append(q)
-            save_data(QUESTIONS_FILE, questions)
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(b'{"status":"success"}')
-            
-        # 2. تسليم إجابات الطالب
-        elif self.path == '/submit_exam':
-            submission = json.loads(post_data.decode('utf-8'))
-            submissions = load_data(SUBMISSIONS_FILE)
-            submissions.append(submission)
-            save_data(SUBMISSIONS_FILE, submissions)
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(b'{"status":"success"}')
-            
-        # 3. حذف سؤال (الميزة الجديدة)
-        elif self.path == '/delete_question':
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode('utf-8'))
-            q_index = data.get('index')
-            questions = load_data(QUESTIONS_FILE)
-            
-            if q_index is not None and 0 <= q_index < len(questions):
-                questions.pop(q_index)
-                save_data(QUESTIONS_FILE, questions)
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(b'{"status":"success"}')
-        else:
-            self.send_error(404, "Not Found")
 
-print(f"🔥 منصة الأستاذ الخضر تعمل الآن على http://localhost:{PORT}")
-with NobleServer(("", PORT), MyHandler) as httpd:
+            # حفظ سؤال جديد
+            if self.path in ['/add_question', '/questions']:
+                if isinstance(data, dict):
+                    data.pop('_id', None)
+                    questions_col.insert_one(data)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
+
+            # حفظ إجابة/نتيجة طالب جديدة
+            elif self.path in ['/submit', '/submit_answer', '/submit_exam', '/submissions']:
+                if isinstance(data, dict):
+                    data.pop('_id', None)
+                    results_col.insert_one(data)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
+
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+        except Exception as e:
+            print("خطأ في معالجة طلب POST:", e)
+            self.send_response(500)
+            self.end_headers()
+
+# تشغيل السيرفر
+with socketserver.TCPServer(("", PORT), MyHandler) as httpd:
+    print(f"السيرفر يعمل على المنفذ {PORT}")
     httpd.serve_forever()
