@@ -87,10 +87,10 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_response(404)
                 self.end_headers()
 
-        except Exception as e:
-            print("خطأ في معالجة طلب POST:", e)
-            self.send_response(500)
-            self.end_headers()
+            except Exception as e:
+                print("خطأ في معالجة طلب POST:", e)
+                self.send_response(500)
+                self.end_headers()
 
 # تشغيل السيرفر
 with socketserver.TCPServer(("", PORT), MyHandler) as httpd:
