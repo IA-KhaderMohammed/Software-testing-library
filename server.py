@@ -2,6 +2,7 @@ import http.server
 import socketserver
 import json
 import os
+from urllib.parse import parse_qs
 
 # --- 1. الاتصال بقاعدة البيانات MongoDB ---
 MONGO_URI = "mongodb+srv://glofr12gdf_db_user:iqZibU7xeVESsJTo@store.yovmlnq.mongodb.net/?appName=store"
@@ -31,12 +32,11 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
 
-    # موافقة السيرفر على طلب المتصفح الاستكشافي (CORS Preflight)
     def do_OPTIONS(self):
         self._set_headers(200)
 
     def do_GET(self):
-        # 1. جلب الأسئلة
+        # 1. جلب الأسئلة للمنصة ولوحة المشرف
         if self.path in ['/questions', '/get_questions']:
             questions = []
             if questions_col is not None:
@@ -49,7 +49,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(questions, ensure_ascii=False).encode('utf-8'))
 
         # 2. جلب إجابات ونتائج الطلاب للمشرف
-        elif self.path in ['/submissions', '/get_submissions', '/results']:
+        elif self.path in ['/submissions', '/get_submissions', '/results', '/api/submissions']:
             results = []
             if results_col is not None:
                 try:
@@ -67,23 +67,33 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         try:
             content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data.decode('utf-8')) if content_length > 0 else {}
+            raw_body = self.rfile.read(content_length).decode('utf-8') if content_length > 0 else ""
+
+            # قراءة البيانات سواء كانت JSON أو Form Data
+            data = {}
+            if raw_body:
+                try:
+                    data = json.loads(raw_body)
+                except Exception:
+                    parsed = parse_qs(raw_body)
+                    data = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
 
             # إضافة سؤال جديد
             if self.path in ['/add_question', '/questions']:
-                if isinstance(data, dict) and questions_col is not None:
-                    data.pop('_id', None)
-                    questions_col.insert_one(data)
+                if data and questions_col is not None:
+                    if isinstance(data, dict):
+                        data.pop('_id', None)
+                        questions_col.insert_one(data)
 
                 self._set_headers(200)
                 self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
 
             # حفظ نتيجة/إجابة طالب
-            elif self.path in ['/submit', '/submit_answer', '/submit_exam', '/submissions']:
-                if isinstance(data, dict) and results_col is not None:
-                    data.pop('_id', None)
-                    results_col.insert_one(data)
+            elif self.path in ['/submit', '/submit_answer', '/submit_exam', '/submissions', '/api/submit']:
+                if data and results_col is not None:
+                    if isinstance(data, dict):
+                        data.pop('_id', None)
+                        results_col.insert_one(data)
 
                 self._set_headers(200)
                 self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
@@ -102,3 +112,4 @@ socketserver.TCPServer.allow_reuse_address = True
 with socketserver.TCPServer(("", PORT), MyHandler) as httpd:
     print(f"السيرفر يعمل الآن بنجاح على المنفذ {PORT}")
     httpd.serve_forever()
+    
