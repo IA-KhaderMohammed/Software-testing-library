@@ -52,7 +52,7 @@
             <p style="margin-top:20px; text-align:center;">شكراً لك، تم إرسال إجاباتك والأكواد التي كتبتها إلى المشرف لمراجعتها يدوياً.</p>
             <p style="text-align:center;">سيتم مراجعة حلولك ومراسلتك عبر رقم الواتساب الذي سجلته فور انتهاء التصحيح.</p>
             <button onclick="goToHome()" style="display:block; width:80%; margin: 25px auto 0 auto; padding: 12px; background: #00f0ff; color: #161f38; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s;">🔄 العودة للرئيسية</button>
-            </div>
+        </div>
 
         <div id="disqualified-screen" class="card disqualified">
             <h1 class="neon-text-red">🚨 تم استبعادك!</h1>
@@ -62,6 +62,7 @@
 
         <div id="admin-screen" class="card">
             <h2 class="neon-text">لوحة تحكم المشرف 👑</h2>
+            
             <div class="admin-section">
                 <h3>➕ إضافة سؤال جديد للاختبار</h3>
                 <label>نص السؤال (أو الكود المراد تصحيحه):</label>
@@ -85,24 +86,28 @@
             <hr style="border: 1px solid #1f2d52; margin: 25px 0;">
 
             <div class="admin-section">
-                <h3>👥 إجابات الطلاب المستلمة</h3>
-                <div style="overflow-x: auto;">
+                <h3 style="color: var(--neon-blue); text-align: center;">📝 الأسئلة الحالية في المنصة</h3>
+                <div style="overflow-x:auto; margin-top:15px;">
                     <table>
-                     <h3 style="color: var(--neon-blue); margin-top: 30px; text-align: center;">📝 الأسئلة الحالية في المنصة</h3>
-<div style="overflow-x:auto; margin-top:15px;">
-    <table>
-        <thead>
-            <tr>
-                <th>نص السؤال</th>
-                <th>النوع</th>
-                <th>التحكم</th>
-            </tr>
-        </thead>
-        <tbody id="admin-questions-tbody">
-            </tbody>
-    </table>
-</div>
+                        <thead>
+                            <tr>
+                                <th>نص السؤال</th>
+                                <th>النوع</th>
+                                <th>التحكم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-questions-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
+            <hr style="border: 1px solid #1f2d52; margin: 25px 0;">
+
+            <div class="admin-section">
+                <h3>👥 إجابات الطلاب المستلمة</h3>
+                <div style="overflow-x: auto; margin-top:15px;">
+                    <table>
                         <thead>
                             <tr>
                                 <th>اسم الطالب</th>
@@ -111,10 +116,11 @@
                             </tr>
                         </thead>
                         <tbody id="admin-tbody">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
+
             <button onclick="exitAdmin()" class="btn-neon" style="margin-top:20px; border-color:var(--neon-red);">خروج لواجهة الطلاب</button>
         </div>
     </div>
@@ -127,6 +133,6 @@
         </div>
     </div>
 
-   <script src="script.js?v=2"></script>
+    <script src="script.js?v=2"></script>
 </body>
 </html>
