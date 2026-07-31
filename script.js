@@ -1,4 +1,4 @@
-let quizData = []; // قاعدة بيانات الأسئلة
+let quizData = []; 
 let currentQuestion = 0;
 let selectedOption = null;
 let username = "";
@@ -15,7 +15,7 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('copy', e => e.preventDefault());
 document.addEventListener('paste', e => e.preventDefault());
 
-// 1. جلب الأسئلة مع حماية كاملة ضد التجميد (حتى لو فاضية)
+// 1. جلب الأسئلة
 function fetchQuestions() {
     fetch('/get_questions')
     .then(res => {
@@ -27,13 +27,13 @@ function fetchQuestions() {
         console.log("تم تحميل الأسئلة بنجاح عددهم:", quizData.length);
     })
     .catch(err => {
-        console.log("السيرفر لسة فاضي أو يحتاج إضافة أسئلة.");
+        console.log("السيرفر فارغ أو يحتاج إضافة أسئلة.");
         quizData = [];
     });
 }
 fetchQuestions();
 
-// 👑 2. دالة الدخول للوحة التحكم (معزولة وشغالة دائماً)
+// 👑 2. دخول لوحة تحكم المشرف
 function goToAdmin() {
     const pass = prompt("الرجاء إدخال الرمز السري للأستاذ الخضر:");
     if (pass === "906748343") {
@@ -78,17 +78,19 @@ function loadQuestion() {
         
         const optionsContainer = document.getElementById('options-container');
         optionsContainer.innerHTML = "";
-        currentQuiz.options.forEach((option, index) => {
-            const button = document.createElement('button');
-            button.innerText = option;
-            button.classList.add('option-btn');
-            button.onclick = () => {
-                document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
-                button.classList.add('selected');
-                selectedOption = index;
-            };
-            optionsContainer.appendChild(button);
-        });
+        if(Array.isArray(currentQuiz.options)) {
+            currentQuiz.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.innerText = option;
+                button.classList.add('option-btn');
+                button.onclick = () => {
+                    document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+                    button.classList.add('selected');
+                    selectedOption = index;
+                };
+                optionsContainer.appendChild(button);
+            });
+        }
     } else {
         document.getElementById('options-container').style.display = "none";
         document.getElementById('code-container').style.display = "block";
@@ -168,31 +170,56 @@ function addQuestion() {
     });
 }
 
+// 🛡️ دالة عرض الإجابات المحمية ضد الانهيار
 function loadStudentsSubmissions() {
     fetch('/get_submissions')
     .then(res => res.json())
     .then(data => {
         const tbody = document.getElementById('admin-tbody');
+        if(!tbody) return;
         tbody.innerHTML = "";
+        
+        if (!Array.isArray(data) || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#888;">لا توجد إجابات مستلمة حتى الآن</td></tr>`;
+            return;
+        }
+
         data.forEach(sub => {
+            if(!sub) return;
             let details = "";
-            sub.answers.forEach((ans, idx) => {
-                details += `<div><strong>س${idx+1}: ${ans.question}</strong></div>`;
-                if(ans.type === 'code') {
-                    details += `<pre>${ans.answer}</pre><br>`;
-                } else {
-                    details += `<div style="color:var(--neon-blue); margin-bottom:10px;">إجابة الطالب: ${ans.answer}</div>`;
-                }
-            });
+            const answersList = Array.isArray(sub.answers) ? sub.answers : [];
             
+            if (answersList.length === 0) {
+                details = `<em style="color:#aaa;">تم التسليم (بدون تفاصيل إجابات)</em>`;
+            } else {
+                answersList.forEach((ans, idx) => {
+                    if(!ans) return;
+                    const qText = ans.question || 'سؤال';
+                    const aText = ans.answer || 'لا يوجد';
+                    
+                    details += `<div style="margin-bottom:6px;"><strong>س${idx+1}: ${qText}</strong></div>`;
+                    if(ans.type === 'code') {
+                        details += `<pre style="background:#0b1329; padding:8px; border-radius:4px; color:#00f0ff;">${aText}</pre>`;
+                    } else {
+                        details += `<div style="color:var(--neon-blue); margin-bottom:10px;">إجابة الطالب: ${aText}</div>`;
+                    }
+                });
+            }
+            
+            const uName = sub.username || "طالب";
+            const wa = sub.whatsapp || "بدون رقم";
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${sub.username}</strong></td>
-                <td><a href="https://wa.me/${sub.whatsapp}" target="_blank" style="color:var(--neon-green); font-weight:bold;">${sub.whatsapp}</a></td>
+                <td><strong>${uName}</strong></td>
+                <td><a href="https://wa.me/${wa}" target="_blank" style="color:var(--neon-green); font-weight:bold;">${wa}</a></td>
                 <td>${details}</td>
             `;
             tbody.appendChild(tr);
         });
+    })
+    .catch(err => {
+        console.error("خطأ قراءة الإجابات:", err);
     });
 }
 
@@ -201,48 +228,46 @@ function userLeftWindow() { if (!isQuizActive || leaveTime !== null) return; if 
 function userReturnedToWindow() { if (!isQuizActive || leaveTime === null) return; clearInterval(countdownInterval); if ((Date.now() - leaveTime) / 1000 >= 20) { disqualifyUser(); } else { document.getElementById('warning-modal').style.display = 'none'; leaveTime = null; alert("تحذير أخير من الأستاذ الخضر!"); } }
 function disqualifyUser() { isQuizActive = false; clearInterval(countdownInterval); document.getElementById('warning-modal').style.display = 'none'; document.getElementById('quiz-screen').classList.remove('active'); document.getElementById('disqualified-screen').classList.add('active'); }
 window.addEventListener('blur', userLeftWindow); window.addEventListener('focus', userReturnedToWindow);
-// دالة إعادة الطالب لشاشة البداية بعد تسليم الامتحان
+
 function goToHome() {
-    // تصفير البيانات والعدادات لإعادة الاختبار من جديد
     currentQuestion = 0;
     selectedOption = null;
     userAnswers = [];
     warningCount = 0;
     leaveTime = null;
     
-    // تفريغ خانات الاسم والواتساب
     if(document.getElementById('username')) document.getElementById('username').value = "";
     if(document.getElementById('whatsapp')) document.getElementById('whatsapp').value = "";
     
-    // إخفاء شاشة النتيجة وإظهار شاشة البداية
     document.getElementById('result-screen').classList.remove('active');
     document.getElementById('start-screen').classList.add('active');
     
-    // تحديث الأسئلة مجدداً من السيرفر
     fetchQuestions();
 }
-// عرض جميع الأسئلة داخل لوحة تحكم الأستاذ
+
 function loadAdminQuestions() {
     fetch('/get_questions')
     .then(res => res.json())
     .then(data => {
         const tbody = document.getElementById('admin-questions-tbody');
+        if(!tbody) return;
         tbody.innerHTML = "";
-        data.forEach((q, index) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${q.text}</td>
-                <td><span style="color:var(--neon-blue);">${q.type === 'mcq' ? 'اختياري' : 'كود / نصي'}</span></td>
-                <td>
-                    <button onclick="deleteQuestion(${index})" style="background:#ff3333; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">❌ حذف</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+        if(Array.isArray(data)) {
+            data.forEach((q, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${q.text}</td>
+                    <td><span style="color:var(--neon-blue);">${q.type === 'mcq' ? 'اختياري' : 'كود / نصي'}</span></td>
+                    <td>
+                        <button onclick="deleteQuestion(${index})" style="background:#ff3333; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">❌ حذف</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
     });
 }
 
-// دالة حذف سؤال معين وإعادة تحديث الجدول
 function deleteQuestion(index) {
     if(confirm("هل أنت متأكد من رغبتك في حذف هذا السؤال نهائياً؟")) {
         fetch('/delete_question', {
@@ -253,8 +278,8 @@ function deleteQuestion(index) {
         .then(res => res.json())
         .then(data => {
             alert("🗑️ تم حذف السؤال بنجاح!");
-            loadAdminQuestions(); // إعادة تحديث جدول الأسئلة
-            fetchQuestions();     // تحديث قاعدة البيانات في الخلفية
+            loadAdminQuestions();
+            fetchQuestions();
         });
     }
 }
